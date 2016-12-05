@@ -1,2 +1,2 @@
-# Graphics-Town
-CS 559 - Graphics Town
+# GraphicsTownJS2015
+GraphicsTown2015 in JavaScript - basic framework code for CS559 Project 2.
