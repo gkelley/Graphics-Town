@@ -42,7 +42,7 @@ var v3 = twgl.v3;
         this.position = position || [0,0,0];
         this.size = size || 1.0;
         this.color = color || [.7,.8,.9];
-        this.rot = rot || Math.PI;
+        this.rot = rot || 1000.0;
     }
     Tree.prototype.init = function(drawingState) {
         var gl=drawingState.gl;
@@ -222,9 +222,10 @@ var v3 = twgl.v3;
         bird += .005;
         var modelM = twgl.m4.scaling([this.size[0],this.size[1],this.size[2]]);
         twgl.m4.setTranslation(modelM,this.position,modelM);
+        var rot = m4.multiply(m4.rotationY(Math.PI / this.rot), modelM);
          var Tmodel_trans=m4.translation(Cubic(Hermite,P,bird));
          var Tmodel_rot=m4.lookAt([0,0,0],Cubic(HermiteDerivative,P,t),[0,1,0]);
-         var Tmodel=m4.multiply(Tmodel_rot,m4.multiply(Tmodel_trans, modelM));
+         var Tmodel=m4.multiply(Tmodel_rot,m4.multiply(Tmodel_trans, rot));
 
         if(bird >= 1){
             bird = 0;
@@ -299,6 +300,7 @@ var v3 = twgl.v3;
 
 //Outside Corners
 grobjects.push(new Tree("bird",[0,2,1.5],[.5,.5,.5],10));
+grobjects.push(new Tree("bird",[-4,4,5],[.5,.5,.5],2));
 
 
 function Cubic(basis,P,t){
