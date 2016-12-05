@@ -239,7 +239,7 @@ var numVertex = 36;
     //see above comment on how this works.
     var image = new Image();
     image.crossOrigin = "anonymous";
-    image.src = "https://farm6.staticflickr.com/5518/31164130522_4f9681545b_b.jpg";
+    image.src = "https://farm6.staticflickr.com/5720/31299835082_c58b342bfd_b.jpg";
   //useful util function to return a glProgram from just vertex and fragment shader source.
     var createGLProgram = function (gl, vSrc, fSrc) {
         var program = gl.createProgram();
