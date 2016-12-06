@@ -21,49 +21,79 @@ var grobjects = grobjects || [];
 
 (function() {
     "use strict";
-
+//aColor acts as the NORMAL--------
     var vertexSource = ""+
         "precision highp float;" +
         "attribute vec3 aPosition;" +
         "attribute vec2 aTexCoord;" +
+        "attribute vec3 aNormal;"+
         "varying vec2 vTexCoord;" +
+        "varying vec3 fNormal;"+
+        "varying vec3 fPosition;"+
         "uniform mat4 pMatrix;" +
         "uniform mat4 vMatrix;" +
         "uniform mat4 mMatrix;" +
         "void main(void) {" +
         "  gl_Position = pMatrix * vMatrix * mMatrix * vec4(aPosition, 1.0);" +
-        "  vTexCoord = aTexCoord * 10.0;" +
+        "  vTexCoord = aTexCoord;" +
+        "  fNormal = normalize(vMatrix * mMatrix * vec4(aNormal,0.0)).xyz;"+
+        "  fPosition = (vMatrix * mMatrix * vec4(aPosition, 1.0)).xyz;"+
         "}";
 
-    var fragmentSource = "" +
-        "precision highp float;" +
-        "varying vec2 vTexCoord;" +
-        "uniform sampler2D uTexture;" +
-        "void main(void) {" +
-        "  gl_FragColor = texture2D(uTexture, vTexCoord);" +
-        "}";
+        var fragmentSource = "" +
+            "precision highp float;" +
+            "varying vec2 vTexCoord;" +
+            "varying vec3 fNormal;"+
+            "varying vec3 fPosition;"+
+            "uniform sampler2D uTexture;" +
+            "uniform vec3 lightdir;"+
+            "const float Ka         = 1.5;" +
+            "const float Kd         = 0.9;" +
+            "const float Ks         = 1.0;" +
+            "const float sExp       = 52.0;" +
+            "const vec3  lightPos   = vec3(100.0,00.0,0.0);" +
+            "const vec3  lightCol   = vec3(0,1.0,1.0);" +
+            "void main(void) {" +
+            "float diffuse = .8 + dot(fNormal,lightdir);"+
+            "vec4 texColor = texture2D(uTexture,vTexCoord);" +
+              "gl_FragColor = vec4((texColor.xyz),texColor.a);" +
+            "}";
 
-
+var numVertex = 6;
     var vertices = new Float32Array([
-         -1.0,  0,  1.0,
-         1.0,  0,  -1.0,
-         -1.0,  0,  -1.0,
-
-         -1.0,  0,  1.0,
-         1.0,  0,  1.0,
-         1.0,  0,  -1.0,
-
+    -1,1,0, -1,0,0, 1,0,0,
+    -1,1,0, 1,1,0, 1,0,0,
     ]);
 
     var uvs = new Float32Array([
-       1.0, 1.0,
-       0.0, 1.0,
-       0.0, 0.0,
 
-       1.0, 1.0,
-       0.0, 0.0,
-       1.0, 0.0
+                //Top
+                0.0, 1.0,
+                0.0, 0.0,
+                1.0, 0.0,
+
+                0.0, 1.0,
+                1.0, 1.0,
+                1.0, 0.0,
+
     ]);
+
+    var vnormal = new Float32Array([
+        //Front
+         0,0,0,
+         0,0,0,
+         0,0,0,
+
+         0,0,0,
+         0,0,0,
+         0,0,0,
+
+
+    ]);
+
+
+
+
 
     //useful util function to simplify shader creation. type is either gl.VERTEX_SHADER or gl.FRAGMENT_SHADER
     var createGLShader = function (gl, type, src) {
@@ -82,8 +112,10 @@ var grobjects = grobjects || [];
     //see above comment on how this works.
     var image = new Image();
     image.crossOrigin = "anonymous";
-	image.src = "https://farm6.staticflickr.com/5482/30800062291_21470aecba_b.jpg"
-    //useful util function to return a glProgram from just vertex and fragment shader source.
+    image.src = "https://farm6.staticflickr.com/5330/31074485340_6abc323180_b.jpg";
+
+
+  //useful util function to return a glProgram from just vertex and fragment shader source.
     var createGLProgram = function (gl, vSrc, fSrc) {
         var program = gl.createProgram();
         var vShader = createGLShader(gl, gl.VERTEX_SHADER, vSrc);
@@ -145,6 +177,7 @@ var grobjects = grobjects || [];
     //creates a gl texture from an image object. Sometiems the image is upside down so flipY is passed to optionally flip the data.
     //it's mostly going to be a try it once, flip if you need to.
     var createGLTexture = function (gl, image, flipY) {
+
         var texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
         if(flipY){
@@ -152,41 +185,43 @@ var grobjects = grobjects || [];
         }
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,  gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,  gl.LINEAR_MIPMAP_LINEAR);
         gl.generateMipmap(gl.TEXTURE_2D);
         gl.bindTexture(gl.TEXTURE_2D, null);
         return texture;
     }
 
-     var TexturedPlane = function () {
-        this.name = "TexturedPlane"
-        this.position = new Float32Array([0, 0, 0]);
+     var Corn = function (position, rot) {
+        this.name = "Pond"
+        this.position = position || new Float32Array([0, 0, 0]);
         this.scale = new Float32Array([1, 1]);
         this.program = null;
         this.attributes = null;
         this.uniforms = null;
-        this.buffers = [null, null]
+        this.buffers = [null, null, null];
         this.texture = null;
+        this.rot = rot || 100000.0;
     }
 
-    TexturedPlane.prototype.init = function (drawingState) {
+    Corn.prototype.init = function (drawingState) {
         var gl = drawingState.gl;
 
         this.program = createGLProgram(gl, vertexSource, fragmentSource);
-        this.attributes = findAttribLocations(gl, this.program, ["aPosition", "aTexCoord"]);
-        this.uniforms = findUniformLocations(gl, this.program, ["pMatrix", "vMatrix", "mMatrix", "uTexture"]);
+        this.attributes = findAttribLocations(gl, this.program, ["aPosition", "aTexCoord", "aNormal"]);
+        this.uniforms = findUniformLocations(gl, this.program, ["pMatrix", "vMatrix", "mMatrix", "uTexture", "lightdir"]);
 
         this.texture = createGLTexture(gl, image, true);
 
         this.buffers[0] = createGLBuffer(gl, vertices, gl.STATIC_DRAW);
         this.buffers[1] = createGLBuffer(gl, uvs, gl.STATIC_DRAW);
+        this.buffers[2] = createGLBuffer(gl, vnormal, gl.STATIC_DRAW);
     }
 
-    TexturedPlane.prototype.center = function () {
+    Corn.prototype.center = function () {
         return this.position;
     }
 
-    TexturedPlane.prototype.draw = function (drawingState) {
+    Corn.prototype.draw = function (drawingState) {
         var gl = drawingState.gl;
 
         gl.useProgram(this.program);
@@ -194,15 +229,16 @@ var grobjects = grobjects || [];
 
         var modelM = twgl.m4.scaling([this.scale[0],this.scale[1], this.scale[2]]);
         twgl.m4.setTranslation(modelM,this.position, modelM);
+        var fin = twgl.m4.multiply(m4.rotationY(Math.PI), modelM);
 
         gl.uniformMatrix4fv(this.uniforms.pMatrix, gl.FALSE, drawingState.proj);
         gl.uniformMatrix4fv(this.uniforms.vMatrix, gl.FALSE, drawingState.view);
-        gl.uniformMatrix4fv(this.uniforms.mMatrix, gl.FALSE, modelM);
+        gl.uniformMatrix4fv(this.uniforms.mMatrix, gl.FALSE, fin);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         gl.uniform1i(this.uniforms.uTexture, 0);
-
+        gl.uniform3f(this.uniforms.lightdir, drawingState.sunDirection[0],drawingState.sunDirection[1],drawingState.sunDirection[2]);
 
 
         enableLocations(gl, this.attributes)
@@ -213,18 +249,28 @@ var grobjects = grobjects || [];
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers[1]);
         gl.vertexAttribPointer(this.attributes.aTexCoord, 2, gl.FLOAT, false, 0, 0);
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers[2]);
+        gl.vertexAttribPointer(this.attributes.aNormal, 3, gl.FLOAT, false, 0, 0);
 
-
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        gl.drawArrays(gl.TRIANGLES, 0, numVertex);
 
         disableLocations(gl, this.attributes);
     }
 
-    // 
-    // var test = new TexturedPlane();
-    //     test.position[1] = 0;
-    //     test.scale = [20, 1, 20];
-    //
-    // grobjects.push(test);
+
+
+
+
+// //Back
+            var back = new Corn([0,0,50]);
+                back.scale = [50, 50, 50];
+            grobjects.push(back);
+
+// //LEft
+//             var left = new Corn("https://farm6.staticflickr.com/5737/31074485260_6d04bb1012_b.jpg", [-20,0,0], 2);
+//                 left.scale = [20, 20, 20];
+//             grobjects.push(left);
+
+
 
 })();

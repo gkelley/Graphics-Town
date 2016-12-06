@@ -40,45 +40,41 @@ var grobjects = grobjects || [];
         "  fPosition = (vMatrix * mMatrix * vec4(aPosition, 1.0)).xyz;"+
         "}";
 
-    var fragmentSource = "" +
-        "precision highp float;" +
-        "varying vec2 vTexCoord;" +
-        "varying vec3 fNormal;"+
-        "varying vec3 fPosition;"+
-        "uniform sampler2D uTexture;" +
-        "uniform vec3 lightdir;"+
-        "const float Ka         = 1.5;" +
-        "const float Kd         = 0.9;" +
-        "const float Ks         = 1.0;" +
-        "const float sExp       = 52.0;" +
-        "const vec3  lightPos   = vec3(100.0,00.0,0.0);" +
-        "const vec3  lightCol   = vec3(0,1.0,1.0);" +
-        "void main(void) {" +
-        "float diffuse = .8 + dot(fNormal,lightdir);"+
-        "vec4 texColor = texture2D(uTexture,vTexCoord);" +
-        "vec3 l=normalize(lightdir);"+
-        "vec3 n=normalize(fNormal);"+
-        "vec3 e=normalize(-fPosition);"+
-        "vec3 h=normalize(e+l);"+
-        "vec3 ambientColor  = Ka*fNormal;"+
-        "vec3 diffuseColor  = Kd*fNormal*dot(l,n);"+
-        "vec3 specularColor = Ks*lightCol*pow(max(dot(h,n),0.0),sExp);"+
-        "gl_FragColor = vec4(ambientColor+diffuseColor+specularColor + texColor.xyz, 1.0);"+
-          "gl_FragColor = vec4((texColor.xyz * vec3(0.941176, 0.901961, 0.54902)) * max(.8,diffuse) + (lightCol.xyz * specularColor.y),texColor.a);" +
-        "}";
+        var fragmentSource = "" +
+            "precision highp float;" +
+            "varying vec2 vTexCoord;" +
+            "varying vec3 fNormal;"+
+            "varying vec3 fPosition;"+
+            "uniform sampler2D uTexture;" +
+            "uniform vec3 lightdir;"+
+            "const float Ka         = 1.5;" +
+            "const float Kd         = 0.9;" +
+            "const float Ks         = 1.0;" +
+            "const float sExp       = 52.0;" +
+            "const vec3  lightPos   = vec3(100.0,00.0,0.0);" +
+            "const vec3  lightCol   = vec3(0,1.0,1.0);" +
+            "void main(void) {" +
+            "float diffuse = .8 + dot(fNormal,lightdir);"+
+            "vec4 texColor = texture2D(uTexture,vTexCoord);" +
+              "gl_FragColor = vec4((texColor.xyz),texColor.a);" +
+            "}";
 
 var numVertex = 6;
     var vertices = new Float32Array([
-    -1,1,0, -1,0,0, 1,0,0,
-    -1,1,0, 1,1,0, 1,0,0,
+        -1.0,  0,  1.0,
+        1.0,  0,  -1.0,
+        -1.0,  0,  -1.0,
+
+        -1.0,  0,  1.0,
+        1.0,  0,  1.0,
+        1.0,  0,  -1.0,
     ]);
 
     var uvs = new Float32Array([
 
-                //Top
                 0.0, 1.0,
-                0.0, 0.0,
                 1.0, 0.0,
+                0.0, 0.0,
 
                 0.0, 1.0,
                 1.0, 1.0,
@@ -120,6 +116,7 @@ var numVertex = 6;
     //see above comment on how this works.
     var image = new Image();
     image.crossOrigin = "anonymous";
+    image.src = "https://farm6.staticflickr.com/5705/31299612172_8ffc2d0532_b.jpg";
 
 
   //useful util function to return a glProgram from just vertex and fragment shader source.
@@ -192,13 +189,13 @@ var numVertex = 6;
         }
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,  gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,  gl.LINEAR_MIPMAP_LINEAR);
         gl.generateMipmap(gl.TEXTURE_2D);
         gl.bindTexture(gl.TEXTURE_2D, null);
         return texture;
     }
 
-     var Corn = function (picSrc, position, rot) {
+     var Corn = function (position, rot) {
         this.name = "Pond"
         this.position = position || new Float32Array([0, 0, 0]);
         this.scale = new Float32Array([1, 1]);
@@ -207,13 +204,12 @@ var numVertex = 6;
         this.uniforms = null;
         this.buffers = [null, null, null];
         this.texture = null;
-        this.pic = picSrc || null;
         this.rot = rot || 100000.0;
     }
 
     Corn.prototype.init = function (drawingState) {
         var gl = drawingState.gl;
-        image.src = this.pic;
+
         this.program = createGLProgram(gl, vertexSource, fragmentSource);
         this.attributes = findAttribLocations(gl, this.program, ["aPosition", "aTexCoord", "aNormal"]);
         this.uniforms = findUniformLocations(gl, this.program, ["pMatrix", "vMatrix", "mMatrix", "uTexture", "lightdir"]);
@@ -237,7 +233,7 @@ var numVertex = 6;
 
         var modelM = twgl.m4.scaling([this.scale[0],this.scale[1], this.scale[2]]);
         twgl.m4.setTranslation(modelM,this.position, modelM);
-        var fin = twgl.m4.multiply(m4.rotationY(Math.PI/this.rot), modelM);
+        var fin = twgl.m4.multiply(m4.rotationY(Math.PI), modelM);
 
         gl.uniformMatrix4fv(this.uniforms.pMatrix, gl.FALSE, drawingState.proj);
         gl.uniformMatrix4fv(this.uniforms.vMatrix, gl.FALSE, drawingState.view);
@@ -267,26 +263,12 @@ var numVertex = 6;
 
 
 
-//Front
-            var front = new Corn("https://farm6.staticflickr.com/5471/30941885830_0fa974cfd7_b.jpg", [0,0,-20]);
-                front.scale = [20, 20, 20];
-            grobjects.push(front);
 
 
-//Right
-            var right = new Corn("https://farm6.staticflickr.com/5471/30941885830_0fa974cfd7_b.jpg", [20,0,0], 2);
-                right.scale = [20, 20, 20];
-            grobjects.push(right);
-
-//Back
-            var back = new Corn("https://farm6.staticflickr.com/5471/30941885830_0fa974cfd7_b.jpg", [0,0,20]);
-                back.scale = [20, 20, 20];
-            grobjects.push(back);
-
-//LEft
-            var left = new Corn("https://farm6.staticflickr.com/5471/30941885830_0fa974cfd7_b.jpg", [-20,0,0], 2);
-                left.scale = [20, 20, 20];
-            grobjects.push(left);
+// Ground
+            var ground = new Corn([0,0,0]);
+                ground.scale = [50, 50, 50];
+            grobjects.push(ground);
 
 
 
