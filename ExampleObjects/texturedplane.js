@@ -220,11 +220,11 @@ var grobjects = grobjects || [];
         disableLocations(gl, this.attributes);
     }
 
-    // 
-    // var test = new TexturedPlane();
-    //     test.position[1] = 0;
-    //     test.scale = [20, 1, 20];
-    //
-    // grobjects.push(test);
+
+    var test = new TexturedPlane();
+        test.position[1] = -0.1;
+        test.scale = [20, 1, 20];
+
+    grobjects.push(test);
 
 })();

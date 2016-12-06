@@ -225,6 +225,7 @@ var numVertex = 6;
     }
 
     Corn.prototype.draw = function (drawingState) {
+        if(document.getElementById("skybox").checked == true){
         var gl = drawingState.gl;
 
         gl.useProgram(this.program);
@@ -258,6 +259,7 @@ var numVertex = 6;
         gl.drawArrays(gl.TRIANGLES, 0, numVertex);
 
         disableLocations(gl, this.attributes);
+    }
     }
 
 

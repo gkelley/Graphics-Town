@@ -222,6 +222,7 @@ var numVertex = 6;
     }
 
     Corn.prototype.draw = function (drawingState) {
+        if(document.getElementById("skybox").checked == true){
         var gl = drawingState.gl;
 
         gl.useProgram(this.program);
@@ -255,6 +256,7 @@ var numVertex = 6;
         gl.drawArrays(gl.TRIANGLES, 0, numVertex);
 
         disableLocations(gl, this.attributes);
+        }
     }
 
 
@@ -262,9 +264,11 @@ var numVertex = 6;
 
 
 // //Back
+
             var back = new Corn([0,0,50]);
                 back.scale = [50, 50, 50];
             grobjects.push(back);
+
 
 // //LEft
 //             var left = new Corn("https://farm6.staticflickr.com/5737/31074485260_6d04bb1012_b.jpg", [-20,0,0], 2);
