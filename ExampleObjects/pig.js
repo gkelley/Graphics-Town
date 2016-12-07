@@ -247,4 +247,4 @@ var m4 = twgl.m4;
 // but I am putting it here, so that if you want to get
 // rid of pigs, just don't load this file.
 
-grobjects.push(new Pig("animal1",[-2,0,0],1) );
+grobjects.push(new Pig("Pig",[-2,0,0],1) );

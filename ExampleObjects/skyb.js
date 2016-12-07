@@ -192,7 +192,7 @@ var numVertex = 6;
     }
 
      var Corn = function (position, rot) {
-        this.name = "Pond"
+        this.name = "skybox"
         this.position = position || new Float32Array([0, 0, 0]);
         this.scale = new Float32Array([1, 1]);
         this.program = null;
